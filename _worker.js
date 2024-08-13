@@ -70,8 +70,8 @@ async function listFiles(kvNamespace, token) {
         </head>
         <body>
             <h1>KV Storage</h1>
-            <form id="uploadForm" method="POST" enctype="multipart/form-data">
-                <input type="file" id="fileInput" name="file" required>
+            <form id="uploadForm">
+                <input type="file" id="fileInput" required>
                 <input type="hidden" name="token" value="${token}">
                 <button type="submit">Upload File</button>
             </form>
@@ -114,7 +114,12 @@ async function listFiles(kvNamespace, token) {
                             const base64Data = reader.result.split(',')[1]; // Get base64 data
                             const filename = file.name;
 
-                            const response = await fetch('${location.origin}/' + filename + '?token=${token}&upload=' + base64Data);
+                            const response = await fetch('${location.origin}/' + filename + '?token=${token}&upload=' + base64Data, {
+                                method: 'GET',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                }
+                            });
                             if (response.ok) {
                                 alert('File uploaded successfully.');
                                 location.reload(); // Reload the page to see the updated list
