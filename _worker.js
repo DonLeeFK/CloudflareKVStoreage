@@ -16,15 +16,18 @@ async function handleRequest(request, env) {
     if (request.method === "POST") {
         const formData = await request.formData();
         const file = formData.get("file");
-        const filename = file.name;
 
-        const reader = file.stream().getReader();
-        const result = await reader.read();
-        const base64Data = btoa(String.fromCharCode(...new Uint8Array(result.value))); // Convert to base64
+        if (file) {
+            const arrayBuffer = await file.arrayBuffer();
+            const uint8Array = new Uint8Array(arrayBuffer);
+            const base64Data = btoa(String.fromCharCode(...uint8Array)); // Convert to base64
 
-        // Store the base64 encoded file in KV storage
-        await kvNamespace.put(filename, base64Data); // Store directly as base64 encoded string
-        return new Response('File uploaded successfully', { status: 200 });
+            // Store the base64 encoded file in KV storage
+            await kvNamespace.put(filename, base64Data); // Store directly as base64 encoded string
+            return new Response('File uploaded successfully', { status: 200 });
+        } else {
+            return new Response('No file uploaded', { status: 400 });
+        }
     }
 
     // List all files in storage when no filename is provided
@@ -35,33 +38,21 @@ async function handleRequest(request, env) {
         });
     }
 
-    // Handle file retrieval (no upload parameter)
-    if (!upload) {
-        // Retrieve the file from KV storage
-        const file = await kvNamespace.get(filename);
-        if (!file) {
-            return new Response('File not found', { status: 404 });
+    // Handle file retrieval
+    const file = await kvNamespace.get(filename);
+    if (!file) {
+        return new Response('File not found', { status: 404 });
+    }
+
+    // Decode the file from base64 and return it
+    const decodedFile = atob(file); // Decode base64 to binary
+    const uint8Array = new Uint8Array(decodedFile.split('').map(c => c.charCodeAt(0)));
+    return new Response(uint8Array, {
+        headers: {
+            'Content-Type': 'application/octet-stream',
+            'Content-Disposition': `attachment; filename="${filename}"`,
         }
-
-        // Decode the file from base64 and return it
-        const decodedFile = atob(file); // Decode base64 to binary
-        const uint8Array = new Uint8Array(decodedFile.split('').map(c => c.charCodeAt(0)));
-        return new Response(uint8Array, {
-            headers: {
-                'Content-Type': 'application/octet-stream',
-                'Content-Disposition': `attachment; filename="${filename}"`,
-            }
-        });
-    }
-
-    // Handle file deletion
-    if (request.method === 'DELETE') {
-        const deleteResponse = await deleteFile(kvNamespace, filename);
-        return new Response(deleteResponse, { status: 200 });
-    }
-
-    // Handle bad requests
-    return new Response('Bad Request', { status: 400 });
+    });
 }
 
 // Function to list all files in KV storage
