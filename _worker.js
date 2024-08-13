@@ -7,7 +7,7 @@ addEventListener('fetch', event => {
   
     if (pathname === '/list') {
       // Send a request to your backend API to retrieve the file list
-      const response = await fetch('https://<backend_domain>/list')
+      const response = await fetch('https://kvstore.pages.dev/list')
       const fileList = await response.json()
   
       return new Response(JSON.stringify(fileList), {
