@@ -1,0 +1,8 @@
+"architect": {
+  "build": {
+    "options": {
+      "outputPath": "dist/kvstore",
+      // other options
+    }
+  }
+}
