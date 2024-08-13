@@ -1,7 +1,6 @@
 async function handleRequest(request, env) {
     const url = new URL(request.url);
     const token = url.searchParams.get('token'); // Get the token from query parameters
-    const upload = url.searchParams.get('upload'); // Get the upload parameter
     const filename = url.pathname.slice(1); // Extract filename from the URL path
 
     // Access the environment variables
@@ -11,6 +10,21 @@ async function handleRequest(request, env) {
     // Check if the provided token is valid
     if (token !== validToken) {
         return new Response('Unauthorized', { status: 401 });
+    }
+
+    // Handle file upload (POST request)
+    if (request.method === "POST") {
+        const formData = await request.formData();
+        const file = formData.get("file");
+        const filename = file.name;
+
+        const reader = file.stream().getReader();
+        const result = await reader.read();
+        const base64Data = btoa(String.fromCharCode(...new Uint8Array(result.value))); // Convert to base64
+
+        // Store the base64 encoded file in KV storage
+        await kvNamespace.put(filename, base64Data); // Store directly as base64 encoded string
+        return new Response('File uploaded successfully', { status: 200 });
     }
 
     // List all files in storage when no filename is provided
@@ -40,13 +54,6 @@ async function handleRequest(request, env) {
         });
     }
 
-    // Handle file upload (upload parameter is present)
-    if (upload) {
-        // Store the base64 encoded file in KV storage
-        await kvNamespace.put(filename, upload); // Store directly as base64 encoded string
-        return new Response('File uploaded successfully', { status: 200 });
-    }
-
     // Handle file deletion
     if (request.method === 'DELETE') {
         const deleteResponse = await deleteFile(kvNamespace, filename);
@@ -70,8 +77,8 @@ async function listFiles(kvNamespace, token) {
         </head>
         <body>
             <h1>KV Storage</h1>
-            <form id="uploadForm">
-                <input type="file" id="fileInput" required>
+            <form id="uploadForm" method="POST">
+                <input type="file" id="fileInput" name="file" required>
                 <input type="hidden" name="token" value="${token}">
                 <button type="submit">Upload File</button>
             </form>
@@ -102,34 +109,6 @@ async function listFiles(kvNamespace, token) {
                             });
                     }
                 }
-
-                document.getElementById('uploadForm').onsubmit = async function(event) {
-                    event.preventDefault(); // Prevent the form from submitting normally
-                    const fileInput = document.getElementById('fileInput');
-                    const file = fileInput.files[0];
-
-                    if (file) {
-                        const reader = new FileReader();
-                        reader.onloadend = async function() {
-                            const base64Data = reader.result.split(',')[1]; // Get base64 data
-                            const filename = file.name;
-
-                            const response = await fetch('${location.origin}/' + filename + '?token=${token}&upload=' + base64Data, {
-                                method: 'GET',
-                                headers: {
-                                    'Content-Type': 'application/json'
-                                }
-                            });
-                            if (response.ok) {
-                                alert('File uploaded successfully.');
-                                location.reload(); // Reload the page to see the updated list
-                            } else {
-                                alert('Failed to upload file.');
-                            }
-                        };
-                        reader.readAsDataURL(file); // Read the file as a data URL
-                    }
-                };
             </script>
         </body>
         </html>

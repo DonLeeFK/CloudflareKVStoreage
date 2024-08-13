@@ -1,37 +1,30 @@
 #!/bin/bash
 
-# Check if the correct number of arguments is provided
+# Check if the correct number of arguments are provided
 if [ "$#" -ne 3 ]; then
-    echo "Usage: $0 <file_path> <token> <worker_url>"
+    echo "Usage: $0 <file_path> <worker_url> <token>"
     exit 1
 fi
 
-# Assign input parameters to variables
 FILE_PATH=$1
-TOKEN=$2
-WORKER_URL=$3
+WORKER_URL=$2
+TOKEN=$3
 
 # Check if the file exists
 if [ ! -f "$FILE_PATH" ]; then
-    echo "File not found: $FILE_PATH"
+    echo "Error: File '$FILE_PATH' not found!"
     exit 1
 fi
 
-# Encode the file in Base64
-BASE64_ENCODED=$(base64 "$FILE_PATH")
-
-# Create the upload URL
-# This adds the filename and the base64 encoded content as a query parameter
+# Extract the filename from the file path
 FILENAME=$(basename "$FILE_PATH")
-UPLOAD_URL="${WORKER_URL}/${FILENAME}?token=${TOKEN}&upload=${BASE64_ENCODED}"
 
-# Use curl to perform the GET request to upload the file
-echo "Uploading $FILE_PATH to $UPLOAD_URL"
-RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "$UPLOAD_URL")
+# Upload the file using curl
+response=$(curl -s -o /dev/null -w "%{http_code}" -X POST "$WORKER_URL/$FILENAME?token=$TOKEN" -F "file=@$FILE_PATH")
 
-# Check the response status code
-if [ "$RESPONSE" -eq 200 ]; then
-    echo "File uploaded successfully."
+# Check the response code
+if [ "$response" -eq 200 ]; then
+    echo "File '$FILENAME' uploaded successfully."
 else
-    echo "Failed to upload file. HTTP status code: $RESPONSE"
+    echo "Failed to upload file. HTTP response code: $response"
 fi

@@ -17,12 +17,11 @@ This will download the specified file.
 #### Upload a File:
 Use a request like:
 ```
-<HTTP>
-GET https://yourdomain.com/yourfile.txt?token=yourtoken&upload=base64EncodedString
-curl -X GET "https://yourdomain.com/yourfile.txt?token=yourtoken&upload=base64EncodedString"
+curl -X POST "https://your-worker-url/your-filename?token=yourtoken" \
+     -F "file=@/path/to/your/file.txt"
 ```
 Or use `upload.sh`: 
 ```
 chmod +x upload.sh
-./upload.sh /path/to/your/file.txt yourtoken https://yourworkerurl
+./upload.sh <file_path> <worker_url> <token>
 ```
