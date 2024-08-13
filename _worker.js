@@ -35,7 +35,9 @@ addEventListener('fetch', (event) => {
   }
   
   async function uploadFile(request, kvNamespace) {
-    const { filename, content } = await request.json();
+    const formData = await request.formData();
+    const filename = formData.get('filename');
+    const content = formData.get('file');
     await KV.put(kvNamespace, filename, content);
     return new Response('File uploaded successfully', { status: 200 });
   }
