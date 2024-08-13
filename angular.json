@@ -1,8 +1,30 @@
-"architect": {
-  "build": {
-    "options": {
-      "outputPath": "dist/kvstore",
-      // other options
-    }
+{
+    "version": 1,
+    "newProjectRoot": "projects",
+    "projects": {
+      "KVStore": {
+        "root": "",
+        "sourceRoot": "src",
+        "projectType": "application",
+        "prefix": "app",
+        "architect": {
+          "build": {
+            "builder": "@angular-devkit/build-angular:browser",
+            "options": {
+              "outputPath": "dist/kvstore",
+              "index": "file-upload.component.html",
+              "main": "main.go",
+              "tsConfig": "file-upload.component.ts"
+              // Other build options such as "index", "main", etc.
+            },
+            // Other build configurations such as "configurations", "fileReplacements", etc.
+          }
+        }
+      }
+    },
+    "cli": {
+      "analytics": false
+    },
+    // Other configurations such as "defaultProject", "schematics", etc.
   }
-}
+  
