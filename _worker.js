@@ -60,18 +60,24 @@ async function handleRequest(request, env) {
 // Function to list all files in KV storage
 async function listFiles(kvNamespace, token) {
     const keys = await kvNamespace.list(); // Get all keys from the KV namespace
-    let fileListHtml = '<h1>Files in Storage</h1>';
-
-    // Upload form
-    fileListHtml += `
-        <form id="uploadForm" method="POST" enctype="multipart/form-data">
-            <input type="file" id="fileInput" name="file" required>
-            <input type="hidden" name="token" value="${token}">
-            <button type="submit">Upload File</button>
-        </form>
+    let fileListHtml = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>KV Storage</title>
+        </head>
+        <body>
+            <h1>KV Storage</h1>
+            <form id="uploadForm" method="POST" enctype="multipart/form-data">
+                <input type="file" id="fileInput" name="file" required>
+                <input type="hidden" name="token" value="${token}">
+                <button type="submit">Upload File</button>
+            </form>
+            <ul>
     `;
 
-    fileListHtml += '<ul>';
     for (const key of keys.keys) {
         const fileLink = `<li>
             <a href="${key.name}?token=${token}">${key.name}</a>
@@ -80,45 +86,49 @@ async function listFiles(kvNamespace, token) {
         fileListHtml += fileLink;
     }
 
-    fileListHtml += '</ul>';
-    fileListHtml += `<script>
-        function deleteFile(filename) {
-            if (confirm('Are you sure you want to delete this file?')) {
-                fetch('${location.origin}/' + filename + '?token=${token}', { method: 'DELETE' })
-                    .then(response => {
-                        if (response.ok) {
-                            alert('File deleted successfully.');
-                            location.reload(); // Reload the page to see the updated list
-                        } else {
-                            alert('Failed to delete file.');
-                        }
-                    });
-            }
-        }
+    fileListHtml += `
+            </ul>
+            <script>
+                function deleteFile(filename) {
+                    if (confirm('Are you sure you want to delete this file?')) {
+                        fetch('${location.origin}/' + filename + '?token=${token}', { method: 'DELETE' })
+                            .then(response => {
+                                if (response.ok) {
+                                    alert('File deleted successfully.');
+                                    location.reload(); // Reload the page to see the updated list
+                                } else {
+                                    alert('Failed to delete file.');
+                                }
+                            });
+                    }
+                }
 
-        document.getElementById('uploadForm').onsubmit = async function(event) {
-            event.preventDefault(); // Prevent the form from submitting normally
-            const fileInput = document.getElementById('fileInput');
-            const file = fileInput.files[0];
+                document.getElementById('uploadForm').onsubmit = async function(event) {
+                    event.preventDefault(); // Prevent the form from submitting normally
+                    const fileInput = document.getElementById('fileInput');
+                    const file = fileInput.files[0];
 
-            if (file) {
-                const reader = new FileReader();
-                reader.onloadend = async function() {
-                    const base64Data = reader.result.split(',')[1]; // Get base64 data
-                    const filename = file.name;
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = async function() {
+                            const base64Data = reader.result.split(',')[1]; // Get base64 data
+                            const filename = file.name;
 
-                    const response = await fetch('${location.origin}/' + filename + '?token=${token}&upload=' + base64Data);
-                    if (response.ok) {
-                        alert('File uploaded successfully.');
-                        location.reload(); // Reload the page to see the updated list
-                    } else {
-                        alert('Failed to upload file.');
+                            const response = await fetch('${location.origin}/' + filename + '?token=${token}&upload=' + base64Data);
+                            if (response.ok) {
+                                alert('File uploaded successfully.');
+                                location.reload(); // Reload the page to see the updated list
+                            } else {
+                                alert('Failed to upload file.');
+                            }
+                        };
+                        reader.readAsDataURL(file); // Read the file as a data URL
                     }
                 };
-                reader.readAsDataURL(file); // Read the file as a data URL
-            }
-        };
-    </script>`;
+            </script>
+        </body>
+        </html>
+    `;
     return fileListHtml;
 }
 

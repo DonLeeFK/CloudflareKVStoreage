@@ -24,5 +24,5 @@ curl -X GET "https://yourdomain.com/yourfile.txt?token=yourtoken&upload=base64En
 Or use `upload.sh`: 
 ```
 chmod +x upload.sh
-./upload_file.sh /path/to/your/file.txt yourtoken https://yourworkerurl
+./upload.sh /path/to/your/file.txt yourtoken https://yourworkerurl
 ```
