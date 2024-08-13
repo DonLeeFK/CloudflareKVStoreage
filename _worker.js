@@ -1,48 +1,47 @@
-addEventListener('fetch', (event) => {
-    event.respondWith(handleRequest(event.request));
-  });
+addEventListener('fetch', event => {
+    event.respondWith(handleRequest(event.request))
+  })
   
   async function handleRequest(request) {
-    const url = new URL(request.url);
-    const path = url.pathname;
-    const token = ENV.TOKEN;
-    const kvNamespace = ENV.KV;
+    const { pathname, searchParams } = new URL(request.url)
   
-    // Check the authorization token
-    const authToken = request.headers.get('Authorization');
-    if (authToken !== `Bearer ${token}`) {
-      return new Response('Unauthorized', { status: 401 });
+    if (pathname === '/list') {
+      // Send a request to your backend API to retrieve the file list
+      const response = await fetch('https://<backend_domain>/list')
+      const fileList = await response.json()
+  
+      return new Response(JSON.stringify(fileList), {
+        headers: { 'Content-Type': 'application/json' },
+      })
     }
   
-    if (request.method === 'GET' && path === '/list') {
-      return await listFiles(kvNamespace);
-    } else if (request.method === 'POST' && path === '/upload') {
-      return await handleUpload(request, kvNamespace);
-    } else if (request.method === 'DELETE' && path.startsWith('/delete/')) {
-      const filename = path.split('/')[2];
-      return await deleteFile(filename, kvNamespace);
-    } else {
-      return new Response('Not Found', { status: 404 });
+    if (pathname.startsWith('/delete/')) {
+      const filename = pathname.substr('/delete/'.length)
+  
+      // Send a request to your backend API to delete the file
+      const response = await fetch(`https://<backend_domain>/delete/${filename}`, {
+        method: 'DELETE',
+      })
+  
+      return new Response(await response.text())
     }
-  }
   
-  async function listFiles(kvNamespace) {
-    const keys = await KV.get(kvNamespace, { list: true });
-    const fileNames = keys.keys.map((key) => key.name);
-    return new Response(JSON.stringify(fileNames), {
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
+    if (pathname.startsWith('/')) {
+      const filename = pathname.substr(1)
+      const token = searchParams.get('token')
   
-  async function handleUpload(request, kvNamespace) {
-    const { filename, content } = await request.json();
-    const decodedContent = atob(content);
-    await KV.put(kvNamespace, filename, decodedContent);
-    return new Response('File uploaded successfully', { status: 200 });
-  }
+      // Send a request to your backend API to retrieve the file content
+      const response = await fetch(`https://<backend_domain>/${filename}?token=${token}`)
+      const fileContent = await response.text()
   
-  async function deleteFile(filename, kvNamespace) {
-    await KV.delete(kvNamespace, filename);
-    return new Response('File deleted successfully', { status: 200 });
+      // Decode file from base64
+      const decodedFile = atob(fileContent)
+  
+      return new Response(decodedFile, {
+        headers: { 'Content-Type': 'application/octet-stream' },
+      })
+    }
+  
+    return new Response('Not Found', { status: 404 })
   }
   
